@@ -104,7 +104,7 @@ FROM
 JOIN
     usuario u ON pa.usuario_id = u.usuario_id
 JOIN
-    ciudad c ON u.ciudad_id = c.ciudad_id;
+    ciudad c ON u.ciudad_id = c.ciudad_id where pa.estado='pendiente';
 ''')
             pedidos = cursor.fetchall()
             return [dict(pedido) for pedido in pedidos]
