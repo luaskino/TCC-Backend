@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from usuario import registrar_usuario, obtener_usuarios, verificar_usuario, obtener_usuario_por_id, actualizar_usuario
-from pedido_ayuda import insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario
+from pedido_ayuda import finalizar_pedido_ayuda, insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario
 from cateogoria import obtener_categorias
 from ciudad import obtener_ciudad
 from conexion import get_db_connection, release_db_connection
@@ -37,6 +37,10 @@ def solicitar_recuperacion():
         return jsonify(result), 400  # Retorna error si existe
     return jsonify(result), 200  # Retorna mensaje de éxito
 
+@app.route('/finalizar_pedido_ayuda/<int:pedido_id>', methods=['PUT'])
+def finalizar_pedido(pedido_id):
+    resultado, status_code = finalizar_pedido_ayuda(pedido_id)
+    return jsonify(resultado), status_code
 
 @app.route('/reset-password/<token>', methods=['GET'])
 def reset_password_form(token):

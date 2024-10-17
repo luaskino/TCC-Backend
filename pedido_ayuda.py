@@ -2,6 +2,31 @@ from conexion import get_db_connection, release_db_connection
 import traceback
 import psycopg2.extras  # Importa el módulo para usar DictCursor
 
+def finalizar_pedido_ayuda(pedido_id):
+    conn = get_db_connection()  # Obtener la conexión a la base de datos
+    try:
+        with conn.cursor() as cursor:
+            # Actualizar el estado del pedido a 'finalizado'
+            cursor.execute("""
+                UPDATE pedido_ayuda
+                SET estado = 'finalizado'
+                WHERE pedido_id = %s
+            """, (pedido_id,))
+            
+            # Verificar si se actualizó alguna fila
+            if cursor.rowcount == 0:
+                return {"success": False, "message": "Pedido no encontrado"}, 404
+
+            conn.commit()  # Confirmar la transacción
+            return {"success": True, "message": "Pedido finalizado correctamente"}, 200
+    except Exception as e:
+        print(f"Error al finalizar el pedido de ayuda: {e}")
+        print(traceback.format_exc())
+        return {"success": False, "message": "Error interno del servidor"}, 500
+    finally:
+        release_db_connection(conn)  # Liberar la conexión a la base de datos
+
+
 
 def insertar_pedido_ayuda(data):
     conn = get_db_connection()
