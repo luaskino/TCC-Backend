@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from usuario import registrar_usuario, obtener_usuarios, verificar_usuario, obtener_usuario_por_id, actualizar_usuario
-from pedido_ayuda import finalizar_pedido_ayuda, insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario
+from pedido_ayuda import obtener_pedidos_finalizados, finalizar_pedido_ayuda, insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario
 from cateogoria import obtener_categorias
 from ciudad import obtener_ciudad
 from conexion import get_db_connection, release_db_connection
@@ -135,6 +135,11 @@ def listar_pedidos():
     pedidos = obtener_pedido_ayuda()
     return jsonify(pedidos)
 
+# Ruta para listar todos los pedidos de ayuda
+@app.route('/pedidos_finalizados', methods=['GET'])
+def listar_pedidos_finalizados():
+    pedidos = obtener_pedidos_finalizados()
+    return jsonify(pedidos)
 
 # Ruta para obtener todos los pedidos de ayuda por usuario
 @app.route('/pedido_ayuda/usuario/<int:usuario_id>', methods=['GET'])
