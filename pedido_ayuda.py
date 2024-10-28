@@ -118,6 +118,40 @@ JOIN
         release_db_connection(conn)
 
 
+def obtener_pedido_ayuda_todos():
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            cursor.execute('''SELECT
+    pa.pedido_id,
+    pa.categoria_id,
+    pa.descripcion,
+    pa.fecha,
+    pa.estado,
+    pa.ubicacion,
+    u.nombre || ' ' || u.apellido AS nombre_completo,
+    u.celular,
+    u.email,
+    u.direccion,
+    c.descripcion AS ciudad
+FROM
+    pedido_ayuda pa
+JOIN
+    usuario u ON pa.usuario_id = u.usuario_id
+JOIN
+    ciudad c ON u.ciudad_id = c.ciudad_id;
+''')
+            pedidos = cursor.fetchall()
+            return [dict(pedido) for pedido in pedidos]
+    except Exception as e:
+        print(f"Error al obtener pedidos de ayuda: {e}")
+        print(traceback.format_exc())
+        return []
+    finally:
+        release_db_connection(conn)
+
+
+
 def obtener_pedidos_finalizados():
     conn = get_db_connection()
     try:
