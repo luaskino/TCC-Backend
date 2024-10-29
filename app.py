@@ -3,6 +3,7 @@ from flask_cors import CORS
 from usuario import registrar_usuario, obtener_usuarios, verificar_usuario, obtener_usuario_por_id, actualizar_usuario
 from pedido_ayuda import obtener_pedidos_finalizados, finalizar_pedido_ayuda, insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_todos, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario
 from cateogoria import obtener_categorias
+from encuesta import insertar_encuesta, obtener_encuesta_id
 from ciudad import obtener_ciudad
 from conexion import get_db_connection, release_db_connection
 from solicitar_recuperacion import solicitar_recuperacion_contrasena
@@ -128,6 +129,27 @@ def insertar_pedido():
         return jsonify({'message': 'Pedido de ayuda registrado exitosamente'}), 201
     else:
         return jsonify({'message': 'Error al registrar pedido de ayuda'}), 500
+
+@app.route('/encuesta', methods=['POST'])
+def guardar_encuesta():
+    data = request.json  # Obtener los datos en formato JSON del cuerpo de la solicitud
+    if not all(key in data for key in ('pedido_id', 'usuario_id', 'ayudaste')):
+        return jsonify({'error': 'Faltan datos necesarios'}), 400
+
+    # Llamar a la función para insertar la encuesta en la base de datos
+    if insertar_encuesta(data):
+        return jsonify({'message': 'Encuesta guardada exitosamente'}), 201
+    else:
+        return jsonify({'error': 'Error al guardar la encuesta'}), 500
+
+@app.route('/encuesta/<int:encuesta_id>', methods=['GET'])
+def api_obtener_encuesta(encuesta_id):
+    encuesta = obtener_encuesta_id(encuesta_id)
+    if encuesta:
+        return jsonify(encuesta), 200  # Retorna la encuesta en formato JSON
+    else:
+        return jsonify({'error': 'Encuesta no encontrada'}), 404  # Retorna un error si no se encuentra la encuesta
+
 
 # Ruta para listar todos los pedidos de ayuda
 @app.route('/pedido_ayuda', methods=['GET'])

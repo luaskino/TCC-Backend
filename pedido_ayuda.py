@@ -82,9 +82,6 @@ def actualizar_pedido_ayuda(pedido_id, data):
     finally:
         release_db_connection(conn)
 
-
-
-
 def obtener_pedido_ayuda():
     conn = get_db_connection()
     try:
