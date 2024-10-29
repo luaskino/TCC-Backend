@@ -2,19 +2,19 @@ from conexion import get_db_connection, release_db_connection
 import traceback
 import psycopg2.extras  # Importa el módulo para usar DictCursor
 
-def obtener_encuesta_id(encuesta_id):
+def obtener_encuesta_id(pedido_id):
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("""
                 SELECT * FROM encuesta WHERE pedido_id = %s
-            """, (encuesta_id,))
-            encuesta = cursor.fetchone()  # Asegúrate de que esta línea esté bien escrita
-            return dict(encuesta) if encuesta else None  # La variable 'encuesta' debe estar definida
+            """, (pedido_id,))
+            encuestas = cursor.fetchall()  # Utiliza fetchall() para obtener todos los registros
+            return [dict(encuesta) for encuesta in encuestas] if encuestas else []  # Convierte cada registro a un diccionario
     except Exception as e:
-        print(f"Error al obtener encuesta con ID {encuesta_id}: {e}")
+        print(f"Error al obtener encuestas con pedido_id {pedido_id}: {e}")
         print(traceback.format_exc())
-        return None
+        return []
     finally:
         release_db_connection(conn)
 
