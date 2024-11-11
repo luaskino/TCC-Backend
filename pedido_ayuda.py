@@ -235,3 +235,28 @@ def obtener_pedido_ayuda_por_id(pedido_id):
         return None
     finally:
         release_db_connection(conn)
+
+
+
+# Obtener todos los pedidos finalizados y pendientes
+def contar_pedidos_por_estado():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT estado, COUNT(*) FROM pedidos GROUP BY estado")
+            resultados = cursor.fetchall()
+            
+            totales = {
+                "finalizado": 0,
+                "pendiente": 0
+            }
+            
+            for estado, cantidad in resultados:
+                if estado == "finalizado":
+                    totales["finalizado"] = cantidad
+                elif estado == "pendiente":
+                    totales["pendiente"] = cantidad
+
+            return totales
+    finally:
+        release_db_connection(conn)

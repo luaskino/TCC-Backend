@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from usuario import registrar_usuario, obtener_usuarios, verificar_usuario, obtener_usuario_por_id, actualizar_usuario
-from pedido_ayuda import obtener_pedidos_finalizados, finalizar_pedido_ayuda, insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_todos, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario
+from pedido_ayuda import obtener_pedidos_finalizados, finalizar_pedido_ayuda, insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_todos, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario, contar_pedidos_por_estado
 from cateogoria import obtener_categorias
 from encuesta import insertar_encuesta, obtener_encuesta_id
 from ciudad import obtener_ciudad
@@ -195,6 +195,12 @@ def actualizar_pedido(pedido_id):
         return jsonify({'message': 'Pedido de ayuda actualizado exitosamente'})
     else:
         return jsonify({'message': 'Error al actualizar pedido de ayuda'}), 500
+
+# Ruta para obtener el total de todos los pedidos finalizados y pendientes
+@app.route('/totales_pedidos', methods=['GET'])
+def obtener_totales_pedidos():
+    totales = contar_pedidos_por_estado()
+    return jsonify(totales)
 
 # ---------------------------------------------------------------
 
