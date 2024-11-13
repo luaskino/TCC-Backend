@@ -86,7 +86,7 @@ def reset_password(token):
 
 
 # Ruta para registrar un usuario
-@app.route('/register', methods=['POST'])
+@app.route('/registro', methods=['POST'])
 def register():
     data = request.get_json()
     if registrar_usuario(data):
