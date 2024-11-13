@@ -236,27 +236,24 @@ def obtener_pedido_ayuda_por_id(pedido_id):
     finally:
         release_db_connection(conn)
 
-
-
-# Obtener todos los pedidos finalizados y pendientes
-def contar_pedidos_por_estado():
+def obtener_totales_pedidos():
     conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT estado, COUNT(*) FROM pedidos GROUP BY estado")
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            cursor.execute('''
+                SELECT estado, COUNT(*) as total
+                FROM pedido_ayuda
+                WHERE estado IN ('finalizado', 'pendiente')
+                GROUP BY estado;
+            ''')
             resultados = cursor.fetchall()
             
-            totales = {
-                "finalizado": 0,
-                "pendiente": 0
-            }
-            
-            for estado, cantidad in resultados:
-                if estado == "finalizado":
-                    totales["finalizado"] = cantidad
-                elif estado == "pendiente":
-                    totales["pendiente"] = cantidad
-
+            # Transformar los resultados en un diccionario para una respuesta fácil de manejar
+            totales = {row['estado']: row['total'] for row in resultados}
             return totales
+    except Exception as e:
+        print(f"Error al obtener totales de pedidos: {e}")
+        print(traceback.format_exc())
+        return {}
     finally:
         release_db_connection(conn)
