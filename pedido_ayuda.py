@@ -161,37 +161,67 @@ def actualizar_pedido_ayuda(pedido_id, data):
     finally:
         release_db_connection(conn)
 
+from conexion import get_db_connection, release_db_connection
+import traceback
+import psycopg2.extras
+
 def obtener_pedido_ayuda():
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            cursor.execute('''SELECT
-    pa.pedido_id,
-    pa.categoria_id,
-    pa.descripcion,
-    pa.fecha,
-    pa.estado,
-    pa.ubicacion,
-    u.nombre || ' ' || u.apellido AS nombre_completo,
-    u.celular,
-    u.email,
-    u.direccion,
-    c.descripcion AS ciudad
-FROM
-    pedido_ayuda pa
-JOIN
-    usuario u ON pa.usuario_id = u.usuario_id
-JOIN
-    ciudad c ON u.ciudad_id = c.ciudad_id where pa.estado='pendiente';
-''')
+            # Obtener los pedidos de ayuda con detalles del usuario y la ciudad
+            cursor.execute('''
+                SELECT
+                    pa.pedido_id,
+                    pa.categoria_id,
+                    pa.descripcion,
+                    pa.fecha,
+                    pa.estado,
+                    pa.ubicacion,
+                    u.nombre || ' ' || u.apellido AS nombre_completo,
+                    u.celular,
+                    u.email,
+                    u.direccion,
+                    c.descripcion AS ciudad
+                FROM
+                    pedido_ayuda pa
+                JOIN
+                    usuario u ON pa.usuario_id = u.usuario_id
+                JOIN
+                    ciudad c ON u.ciudad_id = c.ciudad_id
+                WHERE
+                    pa.estado = 'pendiente'
+                ORDER BY
+                    pa.pedido_id;
+            ''')
             pedidos = cursor.fetchall()
-            return [dict(pedido) for pedido in pedidos]
+
+            # Obtener los ítems y cantidades para cada pedido
+            pedidos_con_detalles = []
+            for pedido in pedidos:
+                cursor.execute('''
+                    SELECT
+                        item_nombre,
+                        cantidad
+                    FROM
+                        pedido_ayuda_detalle
+                    WHERE
+                        pedido_id = %s;
+                ''', (pedido['pedido_id'],))
+                detalles = cursor.fetchall()
+                
+                pedido_con_detalles = dict(pedido)
+                pedido_con_detalles['detalles'] = [dict(detalle) for detalle in detalles]
+                pedidos_con_detalles.append(pedido_con_detalles)
+            
+            return pedidos_con_detalles
     except Exception as e:
         print(f"Error al obtener pedidos de ayuda: {e}")
         print(traceback.format_exc())
         return []
     finally:
         release_db_connection(conn)
+
 
 
 def obtener_pedido_ayuda_todos():
@@ -287,7 +317,9 @@ def obtener_pedido_ayuda_usuario(usuario_id):
             JOIN
                 categoria_donacion cat ON pa.categoria_id = cat.categoria_id  -- Unir con categoría
             WHERE
-                pa.usuario_id = %s;
+                pa.usuario_id = %s
+                order by pa.pedido_id
+                ;
             ''', (usuario_id,))
             pedidos = cursor.fetchall()
             return [dict(pedido) for pedido in pedidos]  # Retornar los pedidos sin jsonify

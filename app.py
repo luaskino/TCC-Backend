@@ -232,6 +232,38 @@ def get_categorias():
     categorias = obtener_categorias()
     return jsonify(categorias)
 
+# Nueva ruta para obtener estadísticas de categorías
+@app.route('/categorias_estadisticas', methods=['GET'])
+def categorias_estadisticas():
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            # Consulta para obtener el total de pedidos por categoría
+            cursor.execute('''
+                SELECT 
+                    c.descripcion AS categoria, 
+                    COUNT(pa.pedido_id) AS total_pedidos
+                FROM 
+                    categoria c
+                LEFT JOIN 
+                    pedido_ayuda pa ON c.categoria_id = pa.categoria_id
+                GROUP BY 
+                    c.categoria_id, c.descripcion
+                ORDER BY 
+                    total_pedidos DESC
+            ''')
+            resultados = cursor.fetchall()
+            categorias_estadisticas = [
+                {"categoria": row["categoria"], "total_pedidos": row["total_pedidos"]}
+                for row in resultados
+            ]
+            return jsonify(categorias_estadisticas)
+    except Exception as e:
+        print(f"Error al obtener estadísticas de categorías: {e}")
+        return jsonify({"error": "No se pudieron obtener las estadísticas"}), 500
+    finally:
+        conn.close()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
 
