@@ -5,30 +5,42 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def enviar_correo(destinatario, nombre, descripcion_pedido):
+def enviar_correo(destinatario, nombre, descripcion_pedido, detalles):
     remitente = "aguyjepy1@gmail.com"
     servidor = smtplib.SMTP_SSL("smtp.gmail.com", 465)
     servidor.login(remitente, "gqgpbgbclxbtpxnw")
 
-    asunto = "Nuevo Pedido de Ayuda Registrado"
+    # Crear el cuerpo del correo con HTML
+    items_html = ""
+    if detalles:
+        items_html = "<ul>"
+        for detalle in detalles:
+            items_html += f"<li>🛒 <strong>{detalle['item_nombre']}</strong>: {detalle['cantidad']}</li>"
+        items_html += "</ul>"
+    else:
+        items_html = "<p>No se solicitaron ítems específicos.</p>"
+
+    asunto = "🆘 Nuevo Pedido de Ayuda Registrado"
     cuerpo = f"""
-    Hola {nombre},
-
-    Se ha registrado un nuevo pedido de ayuda con la siguiente descripción:
-
-    "{descripcion_pedido}"
-
-    Gracias por tu atención.
-
-    Saludos,
-    El equipo de Ayuda
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px;">
+        <h2 style="color: #6a0dad;">¡Hola {nombre}!</h2>
+        <p>Se ha registrado un nuevo pedido de ayuda con la siguiente descripción:</p>
+        <blockquote style="font-style: italic; color: #555;">"{descripcion_pedido}"</blockquote>
+        <h3>📋 Detalles del Pedido:</h3>
+        {items_html}
+        <p>Gracias por tu atención y disposición para ayudar.</p>
+        <p>🌟 <strong>El equipo de Ayuda</strong></p>
+    </body>
+    </html>
     """
 
+    # Configurar el mensaje MIME
     mensaje = MIMEMultipart()
     mensaje['From'] = remitente
     mensaje['To'] = destinatario
     mensaje['Subject'] = asunto
-    mensaje.attach(MIMEText(cuerpo, 'plain'))
+    mensaje.attach(MIMEText(cuerpo, 'html'))  # Tipo HTML para contenido enriquecido
 
     try:
         servidor.sendmail(remitente, destinatario, mensaje.as_string())
@@ -57,6 +69,7 @@ def insertar_pedido_ayuda(data):
             pedido_id = cursor.fetchone()[0]
 
             # Insertar los detalles opcionales si existen
+            detalles_pedido = []
             if 'detalles' in data and isinstance(data['detalles'], list):
                 for detalle in data['detalles']:
                     cursor.execute("""
@@ -67,6 +80,10 @@ def insertar_pedido_ayuda(data):
                         detalle['item_nombre'],
                         int(detalle['cantidad'])
                     ))
+                    detalles_pedido.append({
+                        'item_nombre': detalle['item_nombre'],
+                        'cantidad': int(detalle['cantidad'])
+                    })
 
             conn.commit()
 
@@ -79,7 +96,7 @@ def insertar_pedido_ayuda(data):
             descripcion_pedido = data.get('descripcion')
             for usuario in usuarios_activos:
                 nombre, email = usuario
-                enviar_correo(email, nombre, descripcion_pedido)
+                enviar_correo(email, nombre, descripcion_pedido, detalles_pedido)
 
             return True
     except Exception as e:
@@ -88,7 +105,6 @@ def insertar_pedido_ayuda(data):
         return False
     finally:
         release_db_connection(conn)
-
 
 def finalizar_pedido_ayuda(pedido_id):
     conn = get_db_connection()  # Obtener la conexión a la base de datos
