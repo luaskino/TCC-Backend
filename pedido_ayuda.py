@@ -1,6 +1,80 @@
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from conexion import get_db_connection, release_db_connection
 import traceback
-import psycopg2.extras  # Importa el módulo para usar DictCursor
+import psycopg2.extras
+
+def enviar_correo(destinatario, nombre, descripcion_pedido):
+    remitente = "aguyjepy1@gmail.com"
+    servidor = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+    servidor.login(remitente, "gqgpbgbclxbtpxnw")
+
+    asunto = "Nuevo Pedido de Ayuda Registrado"
+    cuerpo = f"""
+    Hola {nombre},
+
+    Se ha registrado un nuevo pedido de ayuda con la siguiente descripción:
+
+    "{descripcion_pedido}"
+
+    Gracias por tu atención.
+
+    Saludos,
+    El equipo de Ayuda
+    """
+
+    mensaje = MIMEMultipart()
+    mensaje['From'] = remitente
+    mensaje['To'] = destinatario
+    mensaje['Subject'] = asunto
+    mensaje.attach(MIMEText(cuerpo, 'plain'))
+
+    try:
+        servidor.sendmail(remitente, destinatario, mensaje.as_string())
+        print(f"Correo enviado a {destinatario}")
+    except Exception as e:
+        print(f"Error al enviar correo a {destinatario}: {e}")
+    finally:
+        servidor.quit()
+
+def insertar_pedido_ayuda(data):
+    conn = get_db_connection()
+    try:
+        print("Datos recibidos para registrar pedido de ayuda:", data)
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO pedido_ayuda (usuario_id, categoria_id, descripcion, fecha, estado, ubicacion)
+                VALUES (%s, %s, %s, CURRENT_DATE, %s, %s)
+            """, (
+                int(data.get('usuario_id')),
+                int(data.get('categoria_id')),
+                data.get('descripcion'),
+                data.get('estado') or None,
+                data.get('ubicacion')
+            ))
+            conn.commit()
+
+            # Obtener usuarios con cuenta activa
+            cursor.execute("""
+                SELECT nombre, email FROM usuario WHERE cuenta_activa = true
+            """)
+            usuarios_activos = cursor.fetchall()
+
+            # Enviar correos a todos los usuarios activos
+            descripcion_pedido = data.get('descripcion')
+            for usuario in usuarios_activos:
+                nombre, email = usuario
+                enviar_correo(email, nombre, descripcion_pedido)
+
+            return True
+    except Exception as e:
+        print(f"Error al registrar pedido de ayuda: {e}")
+        print(traceback.format_exc())
+        return False
+    finally:
+        release_db_connection(conn)
+
 
 def finalizar_pedido_ayuda(pedido_id):
     conn = get_db_connection()  # Obtener la conexión a la base de datos
@@ -26,31 +100,6 @@ def finalizar_pedido_ayuda(pedido_id):
     finally:
         release_db_connection(conn)  # Liberar la conexión a la base de datos
 
-
-
-def insertar_pedido_ayuda(data):
-    conn = get_db_connection()
-    try:
-        print("Datos recibidos para registrar pedido de ayuda:", data)
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO pedido_ayuda (usuario_id, categoria_id, descripcion, fecha, estado, ubicacion)
-                VALUES (%s, %s, %s, CURRENT_DATE, %s, %s)
-            """, (
-                int(data.get('usuario_id')),
-                int(data.get('categoria_id')),
-                data.get('descripcion'),
-                data.get('estado') or None,
-                data.get('ubicacion')
-            ))
-            conn.commit()
-            return True
-    except Exception as e:
-        print(f"Error al registrar pedido de ayuda: {e}")
-        print(traceback.format_exc())
-        return False
-    finally:
-        release_db_connection(conn)
 
 def actualizar_pedido_ayuda(pedido_id, data):
     conn = get_db_connection()
