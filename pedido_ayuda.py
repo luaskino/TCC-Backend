@@ -1,9 +1,9 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from conexion import get_db_connection, release_db_connection
 import traceback
 import psycopg2.extras
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 def enviar_correo(destinatario, nombre, descripcion_pedido):
     remitente = "aguyjepy1@gmail.com"
@@ -43,9 +43,10 @@ def insertar_pedido_ayuda(data):
     try:
         print("Datos recibidos para registrar pedido de ayuda:", data)
         with conn.cursor() as cursor:
+            # Insertar el pedido principal
             cursor.execute("""
                 INSERT INTO pedido_ayuda (usuario_id, categoria_id, descripcion, fecha, estado, ubicacion)
-                VALUES (%s, %s, %s, CURRENT_DATE, %s, %s)
+                VALUES (%s, %s, %s, CURRENT_DATE, %s, %s) RETURNING pedido_id
             """, (
                 int(data.get('usuario_id')),
                 int(data.get('categoria_id')),
@@ -53,15 +54,28 @@ def insertar_pedido_ayuda(data):
                 data.get('estado') or None,
                 data.get('ubicacion')
             ))
+            pedido_id = cursor.fetchone()[0]
+
+            # Insertar los detalles opcionales si existen
+            if 'detalles' in data and isinstance(data['detalles'], list):
+                for detalle in data['detalles']:
+                    cursor.execute("""
+                        INSERT INTO pedido_ayuda_detalle (pedido_id, item_nombre, cantidad)
+                        VALUES (%s, %s, %s)
+                    """, (
+                        pedido_id,
+                        detalle['item_nombre'],
+                        int(detalle['cantidad'])
+                    ))
+
             conn.commit()
 
-            # Obtener usuarios con cuenta activa
+            # Obtener usuarios con cuenta activa para enviar correos
             cursor.execute("""
                 SELECT nombre, email FROM usuario WHERE cuenta_activa = true
             """)
             usuarios_activos = cursor.fetchall()
 
-            # Enviar correos a todos los usuarios activos
             descripcion_pedido = data.get('descripcion')
             for usuario in usuarios_activos:
                 nombre, email = usuario
