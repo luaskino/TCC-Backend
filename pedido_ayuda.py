@@ -291,6 +291,64 @@ JOIN
         release_db_connection(conn)
 
 
+def obtener_pedido_ayuda_por_id(pedido_id):
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            # Obtener el pedido de ayuda con detalles del usuario y la ciudad
+            cursor.execute('''
+                SELECT
+                    pa.pedido_id,
+                    pa.categoria_id,
+                    pa.descripcion,
+                    pa.fecha,
+                    pa.estado,
+                    pa.ubicacion,
+                    u.nombre || ' ' || u.apellido AS nombre_completo,
+                    u.celular,
+                    u.email,
+                    u.direccion,
+                    c.descripcion AS ciudad
+                FROM
+                    pedido_ayuda pa
+                JOIN
+                    usuario u ON pa.usuario_id = u.usuario_id
+                JOIN
+                    ciudad c ON u.ciudad_id = c.ciudad_id
+                WHERE
+                    pa.pedido_id = %s;
+            ''', (pedido_id,))
+            
+            pedido = cursor.fetchone()
+
+            if not pedido:
+                return None
+
+            # Obtener los ítems y cantidades para el pedido
+            cursor.execute('''
+                SELECT
+                    item_nombre,
+                    cantidad
+                FROM
+                    pedido_ayuda_detalle
+                WHERE
+                    pedido_id = %s;
+            ''', (pedido['pedido_id'],))
+            detalles = cursor.fetchall()
+
+            pedido_con_detalles = dict(pedido)
+            pedido_con_detalles['detalles'] = [dict(detalle) for detalle in detalles]
+
+            return pedido_con_detalles
+
+    except Exception as e:
+        print(f"Error al obtener el pedido de ayuda con ID {pedido_id}: {e}")
+        print(traceback.format_exc())
+        return None
+    finally:
+        release_db_connection(conn)
+
+
 def obtener_pedido_ayuda_usuario(usuario_id):
     conn = get_db_connection()
     try:
@@ -331,22 +389,6 @@ def obtener_pedido_ayuda_usuario(usuario_id):
         release_db_connection(conn)
 
 
-def obtener_pedido_ayuda_por_id(pedido_id):
-    conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            cursor.execute("""
-                SELECT * FROM pedido_ayuda WHERE pedido_id = %s
-            """, (pedido_id,))
-            pedido = cursor.fetchone()
-            return dict(pedido) if pedido else None
-    except Exception as e:
-        print(f"Error al obtener pedido de ayuda con ID {pedido_id}: {e}")
-        print(traceback.format_exc())
-        return None
-    finally:
-        release_db_connection(conn)
-
 def obtener_totales_pedidos():
     conn = get_db_connection()
     try:
@@ -366,5 +408,44 @@ def obtener_totales_pedidos():
         print(f"Error al obtener totales de pedidos: {e}")
         print(traceback.format_exc())
         return {}
+    finally:
+        release_db_connection(conn)
+
+
+
+def obtener_pedido_ayuda_detalles_por_id(pedido_id):
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            cursor.execute("""
+                            SELECT
+                    pa.pedido_id,
+                    pa.categoria_id,
+                    pa.descripcion,
+                    pa.fecha,
+                    pa.estado,
+                    pa.ubicacion,
+                    u.nombre || ' ' || u.apellido AS nombre_completo,
+                    u.celular,
+                    u.email,
+                    u.direccion,
+                    c.descripcion AS ciudad
+                FROM
+                    pedido_ayuda pa
+                JOIN
+                    usuario u ON pa.usuario_id = u.usuario_id
+                JOIN
+                    ciudad c ON u.ciudad_id = c.ciudad_id
+                WHERE
+                    pedido_id = %s
+                ORDER BY
+                    pa.pedido_id;
+            """, (pedido_id,))
+            pedido = cursor.fetchone()
+            return dict(pedido) if pedido else None
+    except Exception as e:
+        print(f"Error al obtener pedido de ayuda con ID {pedido_id}: {e}")
+        print(traceback.format_exc())
+        return None
     finally:
         release_db_connection(conn)
