@@ -202,7 +202,7 @@ def obtener_pedido_ayuda():
                 cursor.execute('''
                     SELECT
                         item_nombre,
-                        cantidad
+                        cantidad - cantidad_recibida as cantidad
                     FROM
                         pedido_ayuda_detalle
                     WHERE
@@ -328,7 +328,7 @@ def obtener_pedido_ayuda_por_id(pedido_id):
             cursor.execute('''
                 SELECT
                     item_nombre,
-                    cantidad
+                    cantidad, cantidad_recibida
                 FROM
                     pedido_ayuda_detalle
                 WHERE
