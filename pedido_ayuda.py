@@ -327,6 +327,7 @@ def obtener_pedido_ayuda_por_id(pedido_id):
             # Obtener los ítems y cantidades para el pedido
             cursor.execute('''
                 SELECT
+                    detalle_id,
                     item_nombre,
                     cantidad, cantidad_recibida
                 FROM
@@ -449,3 +450,7 @@ def obtener_pedido_ayuda_detalles_por_id(pedido_id):
         return None
     finally:
         release_db_connection(conn)
+
+
+
+

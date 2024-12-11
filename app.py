@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from usuario import registrar_usuario, obtener_usuarios, verificar_usuario, obtener_usuario_por_id, actualizar_usuario
 from pedido_ayuda import obtener_pedidos_finalizados, finalizar_pedido_ayuda, insertar_pedido_ayuda, actualizar_pedido_ayuda, obtener_pedido_ayuda, obtener_pedido_ayuda_todos, obtener_pedido_ayuda_por_id, obtener_pedido_ayuda_usuario, obtener_totales_pedidos
+from pedido_ayuda_detalle import actualizar_pedido_detalle
 from cateogoria import obtener_categorias
 from encuesta import insertar_encuesta, obtener_encuesta_id
 from ciudad import obtener_ciudad
@@ -120,6 +121,14 @@ def update_usuario(usuario_id):
 
 
 # ------------------- Rutas para pedido_ayuda -------------------
+@app.route('/pedido_ayuda_detalle/<int:detalle_id>', methods=['PUT'])
+def update_pedido_detalle(detalle_id):
+    data = request.get_json()
+    if actualizar_pedido_detalle(detalle_id, data):
+        return jsonify({'message': 'Detalle del pedido actualizado exitosamente'})
+    else:
+        return jsonify({'message': 'Error al actualizar el detalle del pedido'}), 500
+
 
 # Ruta para insertar un nuevo pedido de ayuda
 @app.route('/pedido_ayuda', methods=['POST'])
