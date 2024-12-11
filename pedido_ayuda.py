@@ -231,6 +231,7 @@ def obtener_pedido_ayuda_todos():
             cursor.execute('''SELECT
     pa.pedido_id,
     pa.categoria_id,
+    cat.descripcion as categoria,
     pa.descripcion,
     pa.fecha,
     pa.estado,
@@ -244,6 +245,8 @@ FROM
     pedido_ayuda pa
 JOIN
     usuario u ON pa.usuario_id = u.usuario_id
+JOIN
+    categoria_donacion cat ON pa.categoria_id = cat.categoria_id
 JOIN
     ciudad c ON u.ciudad_id = c.ciudad_id;
 ''')
