@@ -10,6 +10,23 @@ def actualizar_pedido_detalle(detalle_id, data):
         # Imprimir los datos recibidos para depuración
         print(f"Datos recibidos para actualizar detalle con ID {detalle_id}: {data}")
 
+        # Consultar la cantidad actual del pedido antes de hacer la actualización
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT cantidad FROM pedido_ayuda_detalle WHERE detalle_id = %s", (detalle_id,))
+            resultado = cursor.fetchone()
+
+            # Si no se encuentra el detalle con el detalle_id proporcionado, retornar False
+            if not resultado:
+                print(f"No se encontró el detalle con ID {detalle_id}")
+                return False
+
+            cantidad_actual = resultado[0]
+
+            # Validar que la cantidad_recibida no sea mayor que la cantidad
+            if 'cantidad_recibida' in data and data['cantidad_recibida'] > cantidad_actual:
+                print(f"Error: La cantidad recibida ({data['cantidad_recibida']}) no puede ser mayor que la cantidad disponible ({cantidad_actual})")
+                return False
+
         # Crear la lista de columnas a actualizar
         update_columns = []
         update_values = []
